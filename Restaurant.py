@@ -30,3 +30,22 @@ class Restaurant:
         cursor.execute('''SELECT * FROM reviews WHERE restaurant_id = ?''', (self.id,))
         reviews = cursor.fetchall()
         return [f'Review for {self.restaurant_name} by {Customer.find_by_id(review[4]).full_name()}: {review[1]} stars.' for review in reviews]
+    
+    def save(self):
+        cursor.execute('''INSERT INTO restaurants (restaurant_name, price)
+            VALUES (?,?)''', (self.restaurant_name, self.price))
+        CONN.commit()
+    
+
+restaurant_instance1 = Restaurant("Chicken Inn", 45)
+
+restaurant_instance1.save()
+
+restaurant_instance2 = Restaurant("Pizza Hut", 20)
+
+restaurant_instance2.save()
+
+restaurant_instance3 = Restaurant("Pizza Mojo", 25)
+
+restaurant_instance3.save()
+

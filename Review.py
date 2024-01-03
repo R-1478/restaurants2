@@ -36,3 +36,7 @@ class Review:
 Review.create_table()
 review_instance = Review(4, "Great place!")
 review_instance.save()
+
+review_instance2 = Review(5, "Great place!")
+review_instance2.save()
+

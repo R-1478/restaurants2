@@ -13,6 +13,7 @@ class Customer:
 
     @classmethod
     def create_table(cls):
+        
         cursor.execute('''CREATE TABLE IF NOT EXISTS customers (
             id INTEGER PRIMARY KEY,
             first_name TEXT,
@@ -40,11 +41,18 @@ class Customer:
         return None
     
     
-#   
+# sample customers
 
 customer_instance = Customer("John", "Doe")
 
 customer_instance.save()
 
+customer_instance2 = Customer("Jane", "Doe")
+
+customer_instance2.save()
+
+customer_instance3 = Customer("Jose", "Gusto")
+
+customer_instance3.save()
 
 
