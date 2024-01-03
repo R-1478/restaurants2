@@ -1,9 +1,9 @@
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, relationship
 
 Base = declarative_base()
-engine = create_engine('sqlite:///data/customer.db', echo=True)  # Use your preferred database URL
+engine = create_engine('sqlite:///data/restaurant.db', echo=True)  # Use your preferred database URL
 
 class Customer(Base):
     __tablename__ = 'customers'
@@ -36,6 +36,8 @@ class Customer(Base):
             if review.star_rating == 5:
                 return review.restaurant
         return None
+
+reviews = relationship("Review", back_populates="customer")
 
 Base.metadata.create_all(engine)  # Create tables at the module level
 

@@ -1,10 +1,35 @@
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
-from Review import Review
 
 Base = declarative_base()
-engine = create_engine('sqlite:///data/restaurant.db', echo=True)  # Use your preferred database URL
+engine = create_engine('sqlite:///data/restaurant.db', echo=True)
+
+class Customer(Base):
+    __tablename__ = 'customers'
+
+    id = Column(Integer, primary_key=True)
+    first_name = Column(String, nullable=False)
+    last_name = Column(String, nullable=False)
+
+    def __repr__(self):
+        return f"<Customer(first_name='{self.first_name}', last_name='{self.last_name}')>"
+
+    reviews = relationship("Review", back_populates="customer")
+
+class Review(Base):
+    __tablename__ = 'reviews'
+
+    id = Column(Integer, primary_key=True)
+    star_rating = Column(Integer, nullable=False)
+    restaurant_id = Column(Integer, ForeignKey('restaurants.id'))
+    customer_id = Column(Integer, ForeignKey('customers.id'))
+
+    def __repr__(self):
+        return f"<Review(star_rating={self.star_rating})>"
+
+    restaurant = relationship("Restaurant", back_populates="reviews")
+    customer = relationship("Customer", back_populates="reviews")
 
 class Restaurant(Base):
     __tablename__ = 'restaurants'
@@ -16,23 +41,19 @@ class Restaurant(Base):
     def __repr__(self):
         return f"<Restaurant(restaurant_name='{self.restaurant_name}', price={self.price})>"
 
-    @classmethod
-    def create_table(cls):
-        Base.metadata.create_all(engine)
-
-    @classmethod
-    def fanciest(cls, session):
-        return session.query(cls).order_by(cls.price.desc()).first()
-
-    def all_reviews(self, session):
-        reviews = session.query(Review).filter_by(restaurant_id=self.id).all()
-        return [f"Review for {self.restaurant_name} by {review.customer.full_name()}: {review.star_rating} stars." for review in reviews]
+    reviews = relationship("Review", back_populates="restaurant")
 
     def save(self, session):
         session.add(self)
         session.commit()
 
-Base.metadata.create_all(engine)  # Create tables at the module level
+
+# Create tables
+Base.metadata.create_all(engine)
+
+# Sample instances and saving them
+Session = sessionmaker(bind=engine)
+session = Session()
 
 # Sample instances and saving them
 Session = sessionmaker(bind=engine)

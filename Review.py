@@ -11,7 +11,7 @@ class Review(Base):
     id = Column(Integer, primary_key=True)
     star_rating = Column(Integer, nullable=False)
     review = Column(String, nullable=False)
-    restaurant_id = Column(Integer, ForeignKey('restaurants.id'))  # Correct foreign key relationship
+    restaurant_id = Column(Integer, ForeignKey('restaurants.id'))  # Assuming 'restaurants' is another table
     customer_id = Column(Integer, ForeignKey('customers.id'))  # Correct foreign key relationship
 
     restaurant = relationship("Restaurant", back_populates="reviews")
@@ -25,7 +25,7 @@ def main():
     from Restaurant import Restaurant
     from Customer import Customer
 
-    # Create tables before using them
+    # Create 'customers' and 'restaurants' tables before using them
     Base.metadata.create_all(engine)
 
     Session = sessionmaker(bind=engine)
