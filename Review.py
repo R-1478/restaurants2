@@ -1,42 +1,53 @@
-# review.py
-import sqlite3
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 
-CONN = sqlite3.connect('data/reviews.db')
-cursor = CONN.cursor()
+Base = declarative_base()
+engine = create_engine("sqlite:///data/review.db")
 
-class Review:
-    def __init__(self, star_rating, review):
-        self.id = None
-        self.star_rating = star_rating
-        self.review = review
-        self.restaurant = None  # Added to establish relationship
-        self.customer = None  # Added to establish relationship
+class Review(Base):
+    __tablename__ = 'reviews'
 
-    @classmethod
-    def create_table(cls):
-        cursor.execute('''CREATE TABLE IF NOT EXISTS reviews (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            star_rating INTEGER NOT NULL,
-            review TEXT NOT NULL,
-            restaurant_id INTEGER,
-            customer_id INTEGER,
-            FOREIGN KEY (restaurant_id) REFERENCES restaurants(id),
-            FOREIGN KEY (customer_id) REFERENCES customers(id)
-        )''')
-        CONN.commit()
+    id = Column(Integer, primary_key=True)
+    star_rating = Column(Integer, nullable=False)
+    review = Column(String, nullable=False)
+    restaurant_id = Column(Integer, ForeignKey('restaurants.id'))  # Correct foreign key relationship
+    customer_id = Column(Integer, ForeignKey('customers.id'))  # Correct foreign key relationship
 
-    def save(self):
-        cursor.execute('''INSERT INTO reviews (star_rating, review, restaurant_id, customer_id)
-            VALUES (?, ?, ?, ?)''', (self.star_rating, self.review, self.restaurant, self.customer))
-        CONN.commit()
+    restaurant = relationship("Restaurant", back_populates="reviews")
+    customer = relationship("Customer", back_populates="reviews")
 
-    def full_review(self):
-        return f'Review for {self.restaurant.restaurant_name} by {self.customer.full_name()}: {self.star_rating} stars.'
+    def __repr__(self):
+        return f"<Review(star_rating={self.star_rating}, review='{self.review}')>"
 
-Review.create_table()
-review_instance = Review(4, "Great place!")
-review_instance.save()
+# Move the session and sample instances inside a function
+def main():
+    from Restaurant import Restaurant
+    from Customer import Customer
 
-review_instance2 = Review(5, "Great place!")
-review_instance2.save()
+    # Create tables before using them
+    Base.metadata.create_all(engine)
 
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    # Sample instances and saving them
+    # Assuming restaurant_instance1 and customer_instance are already created
+
+    review_instance = Review(star_rating=4, review="Great place!")
+    review_instance.restaurant = session.query(Restaurant).filter_by(restaurant_name="Chicken Inn").first()
+    review_instance.customer = session.query(Customer).filter_by(first_name="John", last_name="Doe").first()
+    session.add(review_instance)
+    session.commit()
+
+    # Assuming restaurant_instance2 and customer_instance2 are already created
+    review_instance2 = Review(star_rating=5, review="Great place!")
+    review_instance2.restaurant = session.query(Restaurant).filter_by(restaurant_name="Pizza Hut").first()
+    review_instance2.customer = session.query(Customer).filter_by(first_name="Jane", last_name="Doe").first()
+    session.add(review_instance2)
+    session.commit()
+
+    session.close()  # Close the session when done
+
+if __name__ == "__main__":
+    main()

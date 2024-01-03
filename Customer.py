@@ -1,58 +1,55 @@
-# customer.py
-import sqlite3
-CONN = sqlite3.connect('data/customer.db')
-cursor = CONN.cursor()
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
-class Customer:
-    def __init__(self, first_name, last_name):
-        self.id = None
-        self.first_name = first_name
-        self.last_name = last_name
-        self.reviews = []  # Removed default value
-        self.restaurants = []  # Removed default value
+Base = declarative_base()
+engine = create_engine('sqlite:///data/customer.db', echo=True)  # Use your preferred database URL
+
+class Customer(Base):
+    __tablename__ = 'customers'
+
+    id = Column(Integer, primary_key=True)
+    first_name = Column(String, nullable=False)
+    last_name = Column(String, nullable=False)
+
+    def __repr__(self):
+        return f"<Customer(first_name='{self.first_name}', last_name='{self.last_name}')>"
 
     @classmethod
     def create_table(cls):
-        
-        cursor.execute('''CREATE TABLE IF NOT EXISTS customers (
-            id INTEGER PRIMARY KEY,
-            first_name TEXT,
-            last_name TEXT
-        )''')
-        CONN.commit()
+        Base.metadata.create_all(engine)
 
-    def save(self):
-        cursor.execute('''INSERT INTO customers (first_name, last_name)
-            VALUES (?, ?)''', (self.first_name, self.last_name))
-        CONN.commit()
+    def save(self, session):
+        session.add(self)
+        session.commit()
 
     @classmethod
-    def delete(cls):
-        cursor.execute('''DELETE FROM customers WHERE id = ?''', (cls.id,))
-        CONN.commit()
+    def delete(cls, session):
+        session.delete(cls)
+        session.commit()
 
     def full_name(self):
-        return '{} {}'.format(self.first_name, self.last_name)
+        return f"{self.first_name} {self.last_name}"
 
-    def favorite_restaurant(self):
+    def favorite_restaurant(self, session):
         for review in self.reviews:
             if review.star_rating == 5:
                 return review.restaurant
         return None
-    
-    
-# sample customers
 
-customer_instance = Customer("John", "Doe")
+Base.metadata.create_all(engine)  # Create tables at the module level
 
-customer_instance.save()
+# Sample instances and saving them
+Session = sessionmaker(bind=engine)
+session = Session()
 
-customer_instance2 = Customer("Jane", "Doe")
+customer_instance = Customer(first_name="John", last_name="Doe")
+customer_instance.save(session)
 
-customer_instance2.save()
+customer_instance2 = Customer(first_name="Jane", last_name="Doe")
+customer_instance2.save(session)
 
-customer_instance3 = Customer("Jose", "Gusto")
+customer_instance3 = Customer(first_name="Jose", last_name="Gusto")
+customer_instance3.save(session)
 
-customer_instance3.save()
-
-
+session.close()  # Close the session when done

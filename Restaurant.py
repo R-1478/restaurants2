@@ -1,51 +1,50 @@
-# restaurant.py
-import sqlite3
-from Customer import Customer
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, sessionmaker
+from Review import Review
 
-CONN = sqlite3.connect('data/restaurant.db')
-cursor = CONN.cursor()
+Base = declarative_base()
+engine = create_engine('sqlite:///data/restaurant.db', echo=True)  # Use your preferred database URL
 
-class Restaurant:
-    def __init__(self, restaurant_name, price):
-        self.id = None
-        self.restaurant_name = restaurant_name
-        self.price = price
+class Restaurant(Base):
+    __tablename__ = 'restaurants'
+
+    id = Column(Integer, primary_key=True)
+    restaurant_name = Column(String, nullable=False)
+    price = Column(Integer, nullable=False)
+
+    def __repr__(self):
+        return f"<Restaurant(restaurant_name='{self.restaurant_name}', price={self.price})>"
 
     @classmethod
     def create_table(cls):
-        cursor.execute('''CREATE TABLE IF NOT EXISTS restaurants (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            restaurant_name TEXT NOT NULL,
-            price INTEGER NOT NULL
-        )''')
-        CONN.commit()
+        Base.metadata.create_all(engine)
 
     @classmethod
-    def fanciest(cls):
-        cursor.execute('''SELECT * FROM restaurants ORDER BY price DESC LIMIT 1''')
-        result = cursor.fetchone()
-        return cls(result[1], result[2])
+    def fanciest(cls, session):
+        return session.query(cls).order_by(cls.price.desc()).first()
 
-    def all_reviews(self):
-        cursor.execute('''SELECT * FROM reviews WHERE restaurant_id = ?''', (self.id,))
-        reviews = cursor.fetchall()
-        return [f'Review for {self.restaurant_name} by {Customer.find_by_id(review[4]).full_name()}: {review[1]} stars.' for review in reviews]
-    
-    def save(self):
-        cursor.execute('''INSERT INTO restaurants (restaurant_name, price)
-            VALUES (?,?)''', (self.restaurant_name, self.price))
-        CONN.commit()
-    
+    def all_reviews(self, session):
+        reviews = session.query(Review).filter_by(restaurant_id=self.id).all()
+        return [f"Review for {self.restaurant_name} by {review.customer.full_name()}: {review.star_rating} stars." for review in reviews]
 
-restaurant_instance1 = Restaurant("Chicken Inn", 45)
+    def save(self, session):
+        session.add(self)
+        session.commit()
 
-restaurant_instance1.save()
+Base.metadata.create_all(engine)  # Create tables at the module level
 
-restaurant_instance2 = Restaurant("Pizza Hut", 20)
+# Sample instances and saving them
+Session = sessionmaker(bind=engine)
+session = Session()
 
-restaurant_instance2.save()
+restaurant_instance1 = Restaurant(restaurant_name="Chicken Inn", price=45)
+restaurant_instance1.save(session)
 
-restaurant_instance3 = Restaurant("Pizza Mojo", 25)
+restaurant_instance2 = Restaurant(restaurant_name="Pizza Hut", price=20)
+restaurant_instance2.save(session)
 
-restaurant_instance3.save()
+restaurant_instance3 = Restaurant(restaurant_name="Pizza Mojo", price=25)
+restaurant_instance3.save(session)
 
+session.close()  # Close the session when done
